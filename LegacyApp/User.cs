@@ -1,7 +1,9 @@
 using System;
+using LegacyApp.Model;
 
 namespace LegacyApp
 {
+    // I didn't move this class to Domain folder because it would change the UserDataAccess class.
     public class User
     {
         public int Id { get; set; }

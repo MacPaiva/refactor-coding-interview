@@ -1,4 +1,4 @@
-namespace LegacyApp
+namespace LegacyApp.Model
 {
     public class Client
     {
@@ -6,6 +6,6 @@ namespace LegacyApp
 
         public string Name { get; set; }
 
-        public ClientStatus ClientStatus { get; set; }
+        public ClientStatusEnum ClientStatusEnum { get; set; }
     }
 }

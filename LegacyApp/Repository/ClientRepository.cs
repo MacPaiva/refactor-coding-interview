@@ -1,10 +1,11 @@
 ﻿using System.Configuration;
 using System.Data;
 using System.Data.SqlClient;
+using LegacyApp.Model;
 
-namespace LegacyApp
+namespace LegacyApp.Repository
 {
-    public class ClientRepository
+    public class ClientRepository : IClientRepository
     {
         public Client GetById(int id)
         {
@@ -31,7 +32,7 @@ namespace LegacyApp
                                       {
                                           Id = int.Parse(reader["ClientId"].ToString()),
                                           Name = reader["Name"].ToString(),
-                                          ClientStatus = (ClientStatus)int.Parse(reader["ClientStatusId"].ToString())
+                                          ClientStatusEnum = (ClientStatusEnum)int.Parse(reader["ClientStatusId"].ToString())
                                       };
                 }
             }

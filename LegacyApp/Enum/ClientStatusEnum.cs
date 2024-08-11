@@ -1,6 +1,6 @@
 namespace LegacyApp
 {
-    public enum ClientStatus
+    public enum ClientStatusEnum
     {
         Gold = 1,
         Platinum = 2,
