@@ -1,32 +1,37 @@
 ﻿using System;
+using LegacyApp.Service;
+using LegacyApp.Utils;
 
 namespace LegacyApp
 {
-    public class UserService
+    public class UserService : IUserService
     {
+        private readonly IClientService _clientService;
+        private readonly IUserCreditCheckService _userCreditCheckService;
+        private readonly IUserDataAccessService _userDataAccessService;
+        
+        // Created this constructor to still be able to call UserService without changing Program.cs class.
+        public UserService()
+        {
+            _clientService = new ClientService();
+            _userCreditCheckService = new UserCreditCheckService();
+            _userDataAccessService = new UserDataAccessService();
+        }
+
+        public UserService(IClientService clientService, IUserCreditCheckService userCreditCheckService,
+            IUserDataAccessService userDataAccessService)
+        {
+            _clientService = clientService;
+            _userCreditCheckService = userCreditCheckService;
+            _userDataAccessService = userDataAccessService;
+        }
+        
+        // I didn't move this class to Service folder because it would change the Program.cs class.
         public bool AddUser(string firname, string surname, string email, DateTime dateOfBirth, int clientId)
         {
-            if (string.IsNullOrEmpty(firname) || string.IsNullOrEmpty(surname))
-            {
-                return false;
-            }
-
-            if (!email.Contains("@") && !email.Contains("."))
-            {
-                return false;
-            }
-
-            var now = DateTime.Now;
-            int age = now.Year - dateOfBirth.Year;
-            if (now.Month < dateOfBirth.Month || (now.Month == dateOfBirth.Month && now.Day < dateOfBirth.Day)) age--;
-
-            if (age < 21)
-            {
-                return false;
-            }
-
-            var clientRepository = new ClientRepository();
-            var client = clientRepository.GetById(clientId);
+            if (!ValidateUserInformation(firname, surname, email, dateOfBirth)) return false;
+            
+            var client = _clientService.GetClientById(clientId);
 
             var user = new User
             {
@@ -36,42 +41,32 @@ namespace LegacyApp
                 Firstname = firname,
                 Surname = surname
             };
-
-            if (client.Name == "VeryImportantClient")
-            {
-                // Skip credit check
-                user.HasCreditLimit = false;
-            }
-            else if (client.Name == "ImportantClient")
-            {
-                // Do credit check and double credit limit
-                user.HasCreditLimit = true;
-                using (var userCreditService = new UserCreditServiceClient())
-                {
-                    var creditLimit = userCreditService.GetCreditLimit(user.Firstname, user.Surname, user.DateOfBirth);
-                    creditLimit = creditLimit * 2;
-                    user.CreditLimit = creditLimit;
-                }
-            }
-            else
-            {
-                // Do credit check
-                user.HasCreditLimit = true;
-                using (var userCreditService = new UserCreditServiceClient())
-                {
-                    var creditLimit = userCreditService.GetCreditLimit(user.Firstname, user.Surname, user.DateOfBirth);
-                    user.CreditLimit = creditLimit;
-                }
-            }
-
-            if (user.HasCreditLimit && user.CreditLimit < 500)
-            {
-                return false;
-            }
-
-            UserDataAccess.AddUser(user);
+            
+            if (!_userCreditCheckService.CreditCheck(user)) return false;
+            
+            _userDataAccessService.AddUser(user);
 
             return true;
+        }
+
+        private bool ValidateUserInformation(string firname, string surname, string email, DateTime dateOfBirth)
+        {
+            return ValidateUserName(firname, surname) && ValidateUserEmail(email) && ValidateUserAge(dateOfBirth);
+        }
+
+        private bool ValidateUserAge(DateTime dateOfBirth)
+        {
+            return DateUtils.CalculateAge(dateOfBirth) >= 21;
+        }
+
+        private bool ValidateUserEmail(string email)
+        {
+            return !(!email.Contains("@") && !email.Contains("."));
+        }
+
+        private bool ValidateUserName(string firname, string surname)
+        {
+            return !(string.IsNullOrEmpty(firname) || string.IsNullOrEmpty(surname));
         }
     }
 }
